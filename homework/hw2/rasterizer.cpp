@@ -39,26 +39,23 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
     return Vector4f(v3.x(), v3.y(), v3.z(), w);
 }
 
-int cross_product(int vec1[2], int vec2[2]) {
-    return vec1[0]*vec2[1] - vec2[0]*vec1[1];
+// 叉乘公式：x1*y2 - x2*y1
+float cross_product(float P1[2], float P2[2], float Q[2]) {
+    return (P2[0]-P1[0])*(Q[1]-P1[1]) - (Q[0]-P1[0])*(P2[1]-P1[1]);
 }
 
-int[2] get_vec(int X[2], int Y[2]){
-    return {Y[0]-X[0], Y[1]-X[1]};
-}
 
-static bool insideTriangle(int x, int y, const Vector3f* _v)
+static bool insideTriangle(float x, float y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
-    int P[2] = {x,y};
-    int X[2] = { _v[0][0], _v[0][1]};
-    int Y[2] = { _v[1][0], _v[1][1]};
-    int Z[2] = { _v[2][0], _v[2][1]};
-    int vec_xp[2] = get_vec(X,P), vec_xy[2]=get_vec(X,Y),vec_yz[2]=get_vec(Y,Z), vec_yp[2]=get_vec(Y,P),
-        vec_zx[2] = get_vec(Z,X), vec_zp[2]=get_vec(Z,P);
-    if (cross_product(vec_xp, vec_xy)*cross_product(vec_yz,vec_yp) > 0 &&
-        cross_product(vec_yz,vec_yp)*cross_product(vec_zx, vec_zp) > 0 &&
-        cross_product(vec_zx, vec_zp)*cross_product(vec_xp, vec_xy) > 0)
+    float P[2] = {x,y};
+    float X[2] = { _v[0][0], _v[0][1]};
+    float Y[2] = { _v[1][0], _v[1][1]};
+    float Z[2] = { _v[2][0], _v[2][1]};
+    
+    if (cross_product(X,Y, P)*cross_product(Y,Z,P) > 0 &&
+        cross_product(Y,Z,P)*cross_product(Z,X,P) > 0 &&
+        cross_product(Z,X,P)*cross_product(X,Y, P) > 0)
         return true;
     return false;
 }
@@ -126,25 +123,25 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     
     // TODO : Find out the bounding box of current triangle.
     // iterate through the pixel and find if the current pixel is inside the triangle
-    int x_range[2]={-10000,-10000}, y_range[2]={-10000,-10000};
+    float x_range[2], y_range[2];
     // 获取要遍历的x、y的范围
-    int x_array[3] = {v[0][0], v[1][0], v[2][0]};
-    int y_array[3] = {v[0][1], v[1][1], v[2][1]};
-    x_range[0] = std::min(x_array, x_array+3);
-    x_range[1] = std::max(x_array, x_array+3);
-    y_range[0] = std::min(y_array, y_array+3);
-    y_range[1] = std::max(y_array, y_array+3);
+    float x_array[3] = {v[0][0], v[1][0], v[2][0]};
+    float y_array[3] = {v[0][1], v[1][1], v[2][1]};
+    x_range[0] = *std::min_element(x_array, x_array+3);
+    x_range[1] = *std::max_element(x_array, x_array+3);
+    y_range[0] = *std::min_element(y_array, y_array+3);
+    y_range[1] = *std::max_element(y_array, y_array+3);
 
-    for (int x=x_range[0];x<=x_range[1];x++) {
-        for (int y = y_range[0];y<=y_range[1];y++) {
-            if (insideTriangle(x, y, v)) {
+    for (float x=floor(x_range[0]);x<=x_range[1];x++) {
+        for (float y = floor(y_range[0]);y<=y_range[1];y++) {
+            if (insideTriangle(x, y, t.v)) {
                 auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
                 float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                 float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                 z_interpolated *= w_reciprocal;
-                if (depth_buf[get_index(x*y)] > z_interpolated) {
-                    depth_buf[get_index(x*y)] = z_interpolated;
-                    set_pixel(Eigen::Vector3f{x, y, 0}, t.getColor())
+                if (depth_buf[get_index(x, y)] > z_interpolated) {
+                    depth_buf[get_index(x, y)] = z_interpolated;
+                    set_pixel(Eigen::Vector3f{x, y, 0}, t.getColor());
                 }
             }
         }
