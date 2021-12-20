@@ -1,16 +1,19 @@
-
-# Consider dependencies only in project.
-set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
-
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
+  "CXX"
   )
+# The set of files for implicit dependencies of each language:
+set(CMAKE_DEPENDS_CHECK_CXX
+  "/home/cs18/repo/CG/homework/hw2/Triangle.cpp" "/home/cs18/repo/CG/homework/hw2/build/CMakeFiles/Rasterizer.dir/Triangle.cpp.o"
+  "/home/cs18/repo/CG/homework/hw2/main.cpp" "/home/cs18/repo/CG/homework/hw2/build/CMakeFiles/Rasterizer.dir/main.cpp.o"
+  "/home/cs18/repo/CG/homework/hw2/rasterizer.cpp" "/home/cs18/repo/CG/homework/hw2/build/CMakeFiles/Rasterizer.dir/rasterizer.cpp.o"
+  )
+set(CMAKE_CXX_COMPILER_ID "GNU")
 
-# The set of dependency files which are needed:
-set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/william/repo/CG/homework/hw2/Triangle.cpp" "CMakeFiles/Rasterizer.dir/Triangle.cpp.o" "gcc" "CMakeFiles/Rasterizer.dir/Triangle.cpp.o.d"
-  "/Users/william/repo/CG/homework/hw2/main.cpp" "CMakeFiles/Rasterizer.dir/main.cpp.o" "gcc" "CMakeFiles/Rasterizer.dir/main.cpp.o.d"
-  "/Users/william/repo/CG/homework/hw2/rasterizer.cpp" "CMakeFiles/Rasterizer.dir/rasterizer.cpp.o" "gcc" "CMakeFiles/Rasterizer.dir/rasterizer.cpp.o.d"
+# The include file search paths:
+set(CMAKE_CXX_TARGET_INCLUDE_PATH
+  "/usr/local/include"
+  "/usr/include/opencv"
   )
 
 # Targets to which this target links.
