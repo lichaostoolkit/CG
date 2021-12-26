@@ -1,5 +1,6 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <algorithm>
 
 #include "global.hpp"
 #include "rasterizer.hpp"
@@ -100,14 +101,15 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     if (payload.texture)
     {
         // TODO: Get the texture value at the texture coordinates of the current fragment
-
+        auto interplated_uv = payload.tex_coords;
+        return_color = payload.texture->getColor(interplated_uv.x(),interplated_uv.y());
     }
     Eigen::Vector3f texture_color;
     texture_color << return_color.x(), return_color.y(), return_color.z();
 
     Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005);
     Eigen::Vector3f kd = texture_color / 255.f;
-    Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);
+    Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937)*0.5;
 
     auto l1 = light{{20, 20, 20}, {500, 500, 500}};
     auto l2 = light{{-20, 20, 0}, {500, 500, 500}};
@@ -128,7 +130,15 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-
+        float r = (light.position - point).norm();
+        auto l = (light.position - point).normalized();  // 入射光方向
+        auto v = eye_pos - point;  //视线方向
+        Eigen::Vector3f h = (v+l)/(v+l).norm();
+        float cos_theta = std::max(0.f, normal.dot(h));
+        Eigen::Vector3f specular = ks.cwiseProduct(light.intensity/std::pow(r,2))*cos_theta;
+        Eigen::Vector3f diffuse = kd.cwiseProduct(light.intensity/std::pow(r,2)) * std::max(0.f, normal.dot(l));;
+        Eigen::Vector3f ambient = ka.cwiseProduct(amb_light_intensity);
+        result_color += (specular+diffuse+ambient);
     }
 
     return result_color * 255.f;
@@ -140,7 +150,7 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     Eigen::Vector3f kd = payload.color;
     Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);
 
-    auto l1 = light{{20, 20, 20}, {500, 500, 500}};
+    auto l1 = light{{20, 20, 20}, {500, 500, 500}}; // position是viewspace中的坐标？如果是原始坐标，光源也需要做MV变换,所以这里默认是viewspace坐标
     auto l2 = light{{-20, 20, 0}, {500, 500, 500}};
 
     std::vector<light> lights = {l1, l2};
@@ -158,7 +168,15 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-        
+        float r = (light.position - point).norm();
+        auto l = (light.position - point).normalized();  // 入射光方向
+        auto v = eye_pos - point;  //视线方向
+        Eigen::Vector3f h = (v+l)/(v+l).norm();
+        float cos_theta = std::max(0.f, normal.dot(h));
+        Eigen::Vector3f specular = ks.cwiseProduct(light.intensity/std::pow(r,2))*cos_theta;
+        Eigen::Vector3f diffuse = kd.cwiseProduct(light.intensity/std::pow(r,2)) * std::max(0.f, normal.dot(l));;
+        Eigen::Vector3f ambient = ka.cwiseProduct(amb_light_intensity);
+        result_color += (specular+diffuse+ambient);
     }
 
     return result_color * 255.f;
@@ -246,10 +264,27 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
     // dV = kh * kn * (h(u,v+1/h)-h(u,v))
     // Vector ln = (-dU, -dV, 1)
     // Normal n = normalize(TBN * ln)
+    auto x = normal.x(), y=normal.y(), z = normal.z();
+    Eigen::Vector3f t = Eigen::Vector3f(x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z));
+    t.normalize();
+    Eigen::Vector3f b = normal.cross(t);
+    b.normalize();
+    Eigen::Matrix3f TBN;
+    TBN << t,b,normal;
+    TBN = TBN.transpose();
 
+    Eigen::Vector3f return_color = {0, 0, 0};
+
+    auto texture = payload.texture; 
+    auto w = texture->width, h = texture->height;
+    auto u = payload.tex_coords.x(), v = payload.tex_coords.y();
+    auto dU = kh * kn * (texture->getColor(u+1.0/w,v).x() - texture->getColor(u,v).x()); // 注释中的 h()应该用什么函数
+    auto dV = kh * kn * (texture->getColor(u,v+1.0/h).y() - texture->getColor(u,v).y());
+    Eigen::Vector3f ln = {-dU, -dV, 1.};
+    Eigen::Vector3f final_n = (TBN * ln).normalized();  // 从切线空间转到世界空间
 
     Eigen::Vector3f result_color = {0, 0, 0};
-    result_color = normal;
+    result_color = final_n;
 
     return result_color * 255.f;
 }

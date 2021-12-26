@@ -179,7 +179,8 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList) {
     size_t cnt = 0;
     for (const auto& t:TriangleList)
     {
-        std::cout << "current: " << cnt << "\n";
+        if(cnt%100 == 0)
+            std::cout << "current: " << cnt << "\n";
         cnt++;
         Triangle newtri = *t;
 
@@ -188,7 +189,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList) {
                 (view * model * t->v[1]),
                 (view * model * t->v[2])
         };
-
+        // viewspace: 观察空间，即经过MV变换后的空间坐标
         std::array<Eigen::Vector3f, 3> viewspace_pos;
 
         std::transform(mm.begin(), mm.end(), viewspace_pos.begin(), [](auto& v) {
@@ -305,12 +306,22 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
                 z_interpolated *= w_reciprocal;
                 if (depth_buf[get_index(x, y)] > z_interpolated) {
                     depth_buf[get_index(x, y)] = z_interpolated;
-                    auto interpolated_normal = z_interpolated*(alpha*t.normal[0]/v[0].z()+beta*t.normal[1]/v[1].z()+gamma*t.normal[2]/v[2].z());
-                    Eigen::Vector3f interpolated_color;
-                    Eigen::Vector2f interpolated_texcoords;
+                    auto interpolated_normal = z_interpolated*(alpha*t.normal[0]/v[0].z()+
+                                                               beta*t.normal[1]/v[1].z()+
+                                                               gamma*t.normal[2]/v[2].z());
+                    Eigen::Vector3f interpolated_color = z_interpolated*(alpha*t.color[0]/v[0].z()+
+                                                                         beta*t.color[1]/v[1].z()+
+                                                                         gamma*t.color[2]/v[2].z());
+                    // texcoords 即纹理的坐标 (u,v)
+                    Eigen::Vector2f interpolated_texcoords= z_interpolated*(alpha*t.tex_coords[0]/v[0].z()+
+                                                                         beta*t.tex_coords[1]/v[1].z()+
+                                                                         gamma*t.tex_coords[2]/v[2].z());;
                     
-                    fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, nullptr);
-                    // payload.view_pos = interpolated_shadingcoords;
+                    fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
+                    Eigen::Vector3f interpolated_shadingcoords = z_interpolated*(alpha*view_pos[0]/v[0].z()+
+                                                                                beta*view_pos[1]/v[1].z()+
+                                                                                gamma*view_pos[2]/v[2].z());
+                    payload.view_pos = interpolated_shadingcoords;
                     auto pixel_color = fragment_shader(payload);
                     // frame_buf 填充法向量的信息
                     set_pixel(Eigen::Vector2i{x, y}, pixel_color);
