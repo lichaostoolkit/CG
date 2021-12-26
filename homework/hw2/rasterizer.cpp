@@ -90,7 +90,7 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         for (auto& vec : v) {
             vec /= vec.w();
         }
-        //Viewport transformation
+        //Viewport transformation 因为前面的mvp会把物体缩放到 [-1,1]^3的立方体空间中；
         for (auto & vert : v)
         {
             vert.x() = 0.5*width*(vert.x()+1.0);
