@@ -211,11 +211,30 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payl
     // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
     // Vector b = n cross product t
     // Matrix TBN = [t b n]
+    auto x = normal.x(), y=normal.y(), z = normal.z();
+    Eigen::Vector3f t = Eigen::Vector3f(x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z));
+    t.normalize();
+    // std::cout << "2222\n";
+    Eigen::Vector3f b = normal.cross(t);
+    b.normalize();
+    // std::cout << "3333\n";
+    Eigen::Matrix3f TBN;
+    TBN << t,b,normal;
+    Eigen::Matrix3f TBN_t = TBN.transpose();
     // dU = kh * kn * (h(u+1/w,v)-h(u,v))
     // dV = kh * kn * (h(u,v+1/h)-h(u,v))
     // Vector ln = (-dU, -dV, 1)
     // Position p = p + kn * n * h(u,v)
     // Normal n = normalize(TBN * ln)
+    auto texture = payload.texture; 
+    auto w = texture->width, h = texture->height;
+    auto u = payload.tex_coords.x(), v = payload.tex_coords.y();
+    auto dU = kh * kn * (texture->getColor(u+1.0/w,v).norm() - texture->getColor(u,v).norm()); // 注释中的 h()应该用什么函数
+    auto dV = kh * kn * (texture->getColor(u,v+1.0/h).norm() - texture->getColor(u,v).norm());
+    // std::cout << "4444\n";
+    Eigen::Vector3f ln = {-dU, -dV, 1.};
+    Eigen::Vector3f final_n = (TBN_t * ln).normalized();  // 从切线空间转到世界空间
+    auto new_position = point + kn*final_n.cwiseProduct(texture->getColor(u,v));
 
 
     Eigen::Vector3f result_color = {0, 0, 0};
@@ -224,7 +243,15 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payl
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-
+        float r = (light.position - new_position).norm();
+        auto l = (light.position - new_position).normalized();  // 入射光方向
+        auto v = eye_pos - new_position;  //视线方向
+        Eigen::Vector3f h = (v+l)/(v+l).norm();
+        float cos_theta = std::max(0.f, normal.dot(h));
+        Eigen::Vector3f specular = ks.cwiseProduct(light.intensity/std::pow(r,2))*cos_theta;
+        Eigen::Vector3f diffuse = kd.cwiseProduct(light.intensity/std::pow(r,2)) * std::max(0.f, normal.dot(l));;
+        Eigen::Vector3f ambient = ka.cwiseProduct(amb_light_intensity);
+        result_color += (specular+diffuse+ambient);
 
     }
 
@@ -264,28 +291,31 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
     // dV = kh * kn * (h(u,v+1/h)-h(u,v))
     // Vector ln = (-dU, -dV, 1)
     // Normal n = normalize(TBN * ln)
+    // std::cout << "111\n";
     auto x = normal.x(), y=normal.y(), z = normal.z();
     Eigen::Vector3f t = Eigen::Vector3f(x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z));
     t.normalize();
+    // std::cout << "2222\n";
     Eigen::Vector3f b = normal.cross(t);
     b.normalize();
+    // std::cout << "3333\n";
     Eigen::Matrix3f TBN;
     TBN << t,b,normal;
-    TBN = TBN.transpose();
-
-    Eigen::Vector3f return_color = {0, 0, 0};
+    Eigen::Matrix3f TBN_t = TBN.transpose();
+    // std::cout << "3333\n";
 
     auto texture = payload.texture; 
     auto w = texture->width, h = texture->height;
     auto u = payload.tex_coords.x(), v = payload.tex_coords.y();
-    auto dU = kh * kn * (texture->getColor(u+1.0/w,v).x() - texture->getColor(u,v).x()); // 注释中的 h()应该用什么函数
-    auto dV = kh * kn * (texture->getColor(u,v+1.0/h).y() - texture->getColor(u,v).y());
+    auto dU = kh * kn * (texture->getColor(u+1.0/w,v).norm() - texture->getColor(u,v).norm()); // 注释中的 h()应该用什么函数
+    auto dV = kh * kn * (texture->getColor(u,v+1.0/h).norm() - texture->getColor(u,v).norm());
+    // std::cout << "4444\n";
     Eigen::Vector3f ln = {-dU, -dV, 1.};
-    Eigen::Vector3f final_n = (TBN * ln).normalized();  // 从切线空间转到世界空间
-
+    Eigen::Vector3f final_n = (TBN_t * ln).normalized();  // 从切线空间转到世界空间
+    // std::cout << "5555\n";
     Eigen::Vector3f result_color = {0, 0, 0};
     result_color = final_n;
-
+    // exit(0);
     return result_color * 255.f;
 }
 
