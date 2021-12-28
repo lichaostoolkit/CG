@@ -65,7 +65,11 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
     Eigen::Matrix4f M_persp_2_ortho= Eigen::Matrix4f::Identity();
     M_persp_2_ortho << zNear, 0,0,0,  0,zNear,0,0,  0,0,zNear+zFar,-zNear*zFar,  0,0,1,0;
 
-    projection = M_ortho * M_persp_2_ortho;
+    // 我们的数据文件是右手系，但opencv是左手系，所以需要额外给 x、y乘一个负号 (PS：为什么切换左右手系，等于是绕z轴做一个旋转180度的变换？)
+    // 切换左右手系: 为什么不是直接对y乘一个负号？？
+    Eigen::Matrix4f left_2_right = Eigen::Matrix4f::Identity();
+    left_2_right << -1,0,0,0, 0,-1,0,0, 0,0,1,0, 0,0,0,1;
+    projection =  left_2_right * M_ortho * M_persp_2_ortho;
 
     return projection;
 }
