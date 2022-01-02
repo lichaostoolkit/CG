@@ -87,7 +87,6 @@ std::optional<hit_payload> trace(
 {
     float tNear = kInfinity;
     std::optional<hit_payload> payload;
-    return payload;
     for (const auto & object : objects)
     {
         float tNearK = kInfinity;
@@ -225,8 +224,9 @@ void Renderer::Render(const Scene& scene)
         for (int i = 0; i < scene.width; ++i)
         {
             // generate primary ray direction
-            float x = i;
-            float y = j;
+            // i,j 是像素坐标，而其余的（物体坐标、人眼位置等等）都是世界坐标 => 将像素坐标映射到 投影平面 的坐标
+            float y = (1 - 2*(j+0.5)/scene.height) * scale;
+            float x = (2*(j+0.5)/scene.height - 1) * scale * imageAspectRatio;
             // TODO: Find the x and y positions of the current pixel to get the direction
             // vector that passes through it.
             // Also, don't forget to multiply both of them with the variable *scale*, and
@@ -244,9 +244,9 @@ void Renderer::Render(const Scene& scene)
     (void)fprintf(fp, "P6\n%d %d\n255\n", scene.width, scene.height);
     for (auto i = 0; i < scene.height * scene.width; ++i) {
         static unsigned char color[3];
-        color[0] = (char)(127 * clamp(0, 1, framebuffer[i].x));
-        color[1] = (char)(127 * clamp(0, 1, framebuffer[i].y));
-        color[2] = (char)(127 * clamp(0, 1, framebuffer[i].z));
+        color[0] = (char)(255 * clamp(0, 1, framebuffer[i].x));
+        color[1] = (char)(255 * clamp(0, 1, framebuffer[i].y));
+        color[2] = (char)(255 * clamp(0, 1, framebuffer[i].z));
         fwrite(color, 1, 3, fp);
     }
     fclose(fp);    

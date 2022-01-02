@@ -14,10 +14,12 @@ bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1, const Vector3f
     auto E1 = v1 - v0, E2 = v2-v0, S = orig - v0;
     auto S1 = crossProduct(dir, E2), S2 = crossProduct(S, E1);
     auto s1_e1 = dotProduct(S1, E1),s2_e2 = dotProduct(S2, E2), s1_s = dotProduct(S1, S), S2_d= dotProduct(S2, dir);
-    tnear = s2_e2 / s1_e1;
+    float t = s2_e2 / s1_e1;
     float b1 = s1_s/s1_e1,b2=S2_d/s1_e1;
-    if(tnear>0 && 0 < b1 <1 && 0<b2<1){
-        // u = 
+    if(t>0 && 0 < b1 && 0<b2 && (1-b1-b2)>0){
+        u = b1;
+        v=b2;
+        tnear = t;
         return true;
     }
     return false;
