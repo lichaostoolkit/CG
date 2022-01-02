@@ -226,7 +226,7 @@ void Renderer::Render(const Scene& scene)
             // generate primary ray direction
             // i,j 是像素坐标，而其余的（物体坐标、人眼位置等等）都是世界坐标 => 将像素坐标映射到 投影平面 的坐标
             float y = (1 - 2*(j+0.5)/(float)scene.height) * scale;
-            float x = (2*(j+0.5)/(float)scene.width - 1) * scale * imageAspectRatio;
+            float x = (2*(i+0.5)/(float)scene.width - 1) * scale * imageAspectRatio;
             // TODO: Find the x and y positions of the current pixel to get the direction
             // vector that passes through it.
             // Also, don't forget to multiply both of them with the variable *scale*, and
