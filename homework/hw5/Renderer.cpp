@@ -135,7 +135,7 @@ Vector3f castRay(
     {
         Vector3f hitPoint = orig + dir * payload->tNear;
         Vector3f N; // normal
-        Vector2f st; // st coordinates
+        Vector2f st; // st coordinates 纹理坐标，等同于uv
         payload->hit_obj->getSurfaceProperties(hitPoint, dir, payload->index, payload->uv, N, st);
         switch (payload->hit_obj->materialType) {
             case REFLECTION_AND_REFRACTION:

@@ -127,7 +127,7 @@ public:
     }
 
     bool intersect(const Ray& ray) { return true; }
-
+    // index：记录相交的第k个三角形，记下来干嘛？
     bool intersect(const Ray& ray, float& tnear, uint32_t& index) const
     {
         bool intersect = false;
