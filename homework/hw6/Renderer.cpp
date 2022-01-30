@@ -11,6 +11,7 @@ inline float deg2rad(const float& deg) { return deg * M_PI / 180.0; }
 
 const float EPSILON = 0.00001;
 
+
 // The main render function. This where we iterate over all pixels in the image,
 // generate primary rays and cast these rays into the scene. The content of the
 // framebuffer is saved to a file.
@@ -20,6 +21,8 @@ void Renderer::Render(const Scene& scene)
 
     float scale = tan(deg2rad(scene.fov * 0.5));
     float imageAspectRatio = scene.width / (float)scene.height;
+    // ray的dir不用减去eye_pos，在公式：ray = ori + t*dir 中，dir向量是一个方向向量，
+    // 而方向向量默认以原点为起点，如果减去eye_pos，其实得到的是另一个方向；
     Vector3f eye_pos(-1, 5, 10);
     int m = 0;
     for (uint32_t j = 0; j < scene.height; ++j) {
@@ -35,7 +38,10 @@ void Renderer::Render(const Scene& scene)
             // *scale*, and x (horizontal) variable with the *imageAspectRatio*
 
             // Don't forget to normalize this direction!
-
+            Vector3f dir = normalize(Vector3f(x, y, -1)); // Don't forget to normalize this direction!
+            // dir = normalize(dir);
+            Ray ray(eye_pos, dir);
+            framebuffer[m++] = scene.castRay(ray, 0);
         }
         UpdateProgress(j / (float)scene.height);
     }
