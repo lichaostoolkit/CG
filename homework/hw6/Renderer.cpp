@@ -131,6 +131,7 @@ void Renderer::Render(const Scene& scene)
 
     float scale = tan(deg2rad(scene.fov * 0.5));
     float imageAspectRatio = scene.width / (float)scene.height;
+    // eye_pos对结果是否有影响？
     Vector3f eye_pos(-1, 5, 10);
     int m = 0;
     for (uint32_t j = 0; j < scene.height; ++j) {
@@ -148,7 +149,8 @@ void Renderer::Render(const Scene& scene)
             // Don't forget to normalize this direction!
             Vector3f dir = normalize(Vector3f(x, y, -1)); // Don't forget to normalize this direction!
             // dir = normalize(dir);
-            framebuffer[m++] = castRay(eye_pos, dir, scene, 0);
+            Ray ray(eye_pos, dir);
+            framebuffer[m++] = scene.castRay(ray, 0);
         }
         UpdateProgress(j / (float)scene.height);
     }
