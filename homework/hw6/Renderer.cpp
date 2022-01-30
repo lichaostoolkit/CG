@@ -5,38 +5,11 @@
 #include <fstream>
 #include "Scene.hpp"
 #include "Renderer.hpp"
-#include <optional>
 
 
 inline float deg2rad(const float& deg) { return deg * M_PI / 180.0; }
 
 const float EPSILON = 0.00001;
-
-std::optional<hit_payload> trace(
-        const Vector3f &orig, const Vector3f &dir,
-        const std::vector<Object* > &objects)
-{
-    float tNear = kInfinity;
-    std::optional<hit_payload> payload;
-    Ray ray(orig, dir);
-    for (const auto & object : objects)
-    {
-        float tNearK = kInfinity;
-        uint32_t indexK;
-        Vector2f uvK;
-        if (object->intersect(ray, tNearK, indexK) && tNearK < tNear)
-        {
-            payload.emplace();
-            payload->hit_obj = object;
-            payload->tNear = tNearK;
-            payload->index = indexK;
-            payload->uv = uvK;
-            tNear = tNearK;
-        }
-    }
-
-    return payload;
-}
 
 
 // The main render function. This where we iterate over all pixels in the image,
