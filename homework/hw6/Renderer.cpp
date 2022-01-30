@@ -151,6 +151,7 @@ void Renderer::Render(const Scene& scene)
             // dir = normalize(dir);
             Ray ray(eye_pos, dir);
             framebuffer[m++] = scene.castRay(ray, 0);
+            
         }
         UpdateProgress(j / (float)scene.height);
     }
