@@ -96,7 +96,29 @@ inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
     // invDir: ray direction(x,y,z), invDir=(1.0/x,1.0/y,1.0/z), use this because Multiply is faster that Division
     // dirIsNeg: ray direction(x,y,z), dirIsNeg=[int(x>0),int(y>0),int(z>0)], use this to simplify your logic
     // TODO test if ray bound intersects
+    // for x dim:
+    auto t_enter_x = (pMin.x - ray.origin.x) * invDir.x;
+    auto t_exit_x = (pMax.x - ray.origin.x) * invDir.x;
+
+    auto t_enter_y = (pMin.y - ray.origin.y) * invDir.y;
+    auto t_exit_y = (pMax.y - ray.origin.y) * invDir.y;
+
+    auto t_enter_z = (pMin.z - ray.origin.z) * invDir.z;
+    auto t_exit_z = (pMax.z - ray.origin.z) * invDir.z;
     
+    // 对于单一一个维度，比如x轴来说，当光线沿着x轴的正方向传播，那么t_enter小于t_exit（数值上）；
+    // 但是当光线方向是沿着 x轴的负方向，那么t_enter要大于t_exit
+    if (dirIsNeg[0])
+        std::swap(t_enter_x, t_exit_x);
+    if (dirIsNeg[1])
+        std::swap(t_enter_y, t_exit_y);
+    if (dirIsNeg[2])
+        std::swap(t_enter_z, t_exit_z);
+    auto enter = std::max(t_enter_x, std::max(t_enter_y, t_enter_z));
+    auto exit = std::min(t_exit_x, std::min(t_exit_y, t_exit_z));
+    if (enter < exit && exit > 0)
+        return true;
+    return  false;
 }
 
 inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)
