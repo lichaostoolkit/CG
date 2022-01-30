@@ -135,13 +135,14 @@ Vector3f castRay(
     {
         Vector3f hitPoint = orig + dir * payload->tNear;
         Vector3f N; // normal
-        Vector2f st; // st coordinates 纹理坐标，等同于uv
+        Vector2f st; // st coordinates 纹理坐标，等同于uv，不过payload的uv其实是插值的系数，并不是最终的uv；
         payload->hit_obj->getSurfaceProperties(hitPoint, dir, payload->index, payload->uv, N, st);
         switch (payload->hit_obj->materialType) {
             case REFLECTION_AND_REFRACTION:
             {
                 Vector3f reflectionDirection = normalize(reflect(dir, N));
                 Vector3f refractionDirection = normalize(refract(dir, N, payload->hit_obj->ior));
+                // 加减一个epsilon的作用是：为了表示hitpoint可能是在外表面和内表面，对效果的影响是啥？
                 Vector3f reflectionRayOrig = (dotProduct(reflectionDirection, N) < 0) ?
                                              hitPoint - N * scene.epsilon :
                                              hitPoint + N * scene.epsilon;
@@ -190,7 +191,7 @@ Vector3f castRay(
 
                     lightAmt += inShadow ? 0 : light->intensity * LdotN;
                     Vector3f reflectionDirection = reflect(-lightDir, N);
-
+                    // 判断反射光线方向和观察方向的接近程度
                     specularColor += powf(std::max(0.f, -dotProduct(reflectionDirection, dir)),
                         payload->hit_obj->specularExponent) * light->intensity;
                 }
