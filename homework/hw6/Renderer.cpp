@@ -21,7 +21,8 @@ void Renderer::Render(const Scene& scene)
 
     float scale = tan(deg2rad(scene.fov * 0.5));
     float imageAspectRatio = scene.width / (float)scene.height;
-    // eye_pos对结果是否有影响？
+    // ray的dir不用减去eye_pos，在公式：ray = ori + t*dir 中，dir向量是一个方向向量，
+    // 而方向向量默认以原点为起点，如果减去eye_pos，其实得到的是另一个方向；
     Vector3f eye_pos(-1, 5, 10);
     int m = 0;
     for (uint32_t j = 0; j < scene.height; ++j) {
