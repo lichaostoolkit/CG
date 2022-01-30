@@ -211,7 +211,7 @@ inline Bounds3 Triangle::getBounds() { return Union(Bounds3(v0, v1), v2); }
 inline Intersection Triangle::getIntersection(Ray ray)
 {
     Intersection inter;
-    // 这里的判断依据是啥？
+    // 这里的判断依据是啥？大于0说明光线是从三角形的背面射过来，所以可以忽略
     if (dotProduct(ray.direction, normal) > 0)
         return inter;
     double u, v, t_tmp = 0;
