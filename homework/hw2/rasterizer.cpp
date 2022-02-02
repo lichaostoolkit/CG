@@ -101,9 +101,7 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         for (int i = 0; i < 3; ++i)
         {
             t.setVertex(i, v[i].head<3>());
-            t.setVertex(i, v[i].head<3>());
-            t.setVertex(i, v[i].head<3>());
-        }
+        }        
 
         auto col_x = col[i[0]];
         auto col_y = col[i[1]];
@@ -112,7 +110,6 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         t.setColor(0, col_x[0], col_x[1], col_x[2]);
         t.setColor(1, col_y[0], col_y[1], col_y[2]);
         t.setColor(2, col_z[0], col_z[1], col_z[2]);
-
         rasterize_triangle(t);
     }
 }
@@ -131,14 +128,19 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     x_range[1] = *std::max_element(x_array, x_array+3);
     y_range[0] = *std::min_element(y_array, y_array+3);
     y_range[1] = *std::max_element(y_array, y_array+3);
+    std::cout << v[0] << "\n" << v[1] << "\n"<< v[2] << "\n";
 
     for (float x=floor(x_range[0]);x<=x_range[1];x++) {
         for (float y = floor(y_range[0]);y<=y_range[1];y++) {
             if (insideTriangle(x, y, t.v)) {
+                // std::cout << "1111\n";
                 auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
                 float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                 float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                 z_interpolated *= w_reciprocal;
+                // std::cout << "2222\n";
+                if (y+1 >= height || x+1 >=width)
+                    std::cout << "error\n";
                 if (depth_buf[get_index(x, y)] > z_interpolated) {
                     depth_buf[get_index(x, y)] = z_interpolated;
                     set_pixel(Eigen::Vector3f{x, y, 0}, t.getColor());
@@ -191,6 +193,7 @@ rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 
 int rst::rasterizer::get_index(int x, int y)
 {
+    // std::cout << height << " " << y<<"\n";
     return (height-1-y)*width + x;
 }
 
@@ -198,6 +201,8 @@ void rst::rasterizer::set_pixel(const Eigen::Vector3f& point, const Eigen::Vecto
 {
     //old index: auto ind = point.y() + point.x() * width;
     auto ind = (height-1-point.y())*width + point.x();
+    if (ind > frame_buf.size())
+        std::cout << "22222\n";
     frame_buf[ind] = color;
 
 }
