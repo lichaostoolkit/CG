@@ -232,7 +232,7 @@ inline Bounds3 Triangle::getBounds() { return Union(Bounds3(v0, v1), v2); }
 inline Intersection Triangle::getIntersection(Ray ray)
 {
     Intersection inter;
-
+    // 这里的判断依据是啥？大于0说明光线是从三角形的背面射过来，所以可以忽略
     if (dotProduct(ray.direction, normal) > 0)
         return inter;
     double u, v, t_tmp = 0;
@@ -253,7 +253,14 @@ inline Intersection Triangle::getIntersection(Ray ray)
     t_tmp = dotProduct(e2, qvec) * det_inv;
 
     // TODO find ray triangle intersection
-
+    if (t_tmp < 0)
+        return inter;
+    inter.distance = t_tmp;//光线经过的时间
+    inter.happened = true;//是否与三角形相交
+    inter.m = m;//三角形的材质
+    inter.obj = this;//Triangle继承了Object，重写了virtual Intersection getIntersection(Ray _ray)，三角形调用getIntersection(Ray _ray)，intersection自然记录下当前在相交的三角形，所以用this
+    inter.normal = normal;//三角形面的法线
+    inter.coords = ray(t_tmp);//Vector3f operator()(double t) const{return origin+direction*t;} in Ray.hpp, coords表示相交点的坐标
     return inter;
 }
 
