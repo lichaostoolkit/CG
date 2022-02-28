@@ -8,6 +8,7 @@ constexpr double MY_PI = 3.1415926;
 
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
+    // 正常情况下view矩阵也要计算，来调整相机的各个朝向，使得相机的朝向对齐x、y、-z轴，本作业默认已经对齐,所以view用单位矩阵就好
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
 
     Eigen::Matrix4f translate;
@@ -19,6 +20,7 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
     return view;
 }
 
+//这里是绕z轴旋转，绕任意轴旋转：Rodrigues’ Rotation Formula
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
