@@ -8,6 +8,7 @@ constexpr double MY_PI = 3.1415926;
 
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
+    // 正常情况下view矩阵也要计算，来调整相机的各个朝向，使得相机的朝向对齐x、y、-z轴，本作业默认已经对齐,所以view用单位矩阵就好
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
 
     Eigen::Matrix4f translate;
@@ -19,6 +20,7 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
     return view;
 }
 
+//这里是绕z轴旋转，绕任意轴旋转：Rodrigues’ Rotation Formula
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
@@ -26,12 +28,9 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
     // TODO: Implement this function
     // Create the model matrix for rotating the triangle around the Z axis.
     // Then return it.
-    //  rotate around z-axis, so the the thrid dimension of model_matrix would be 1;
-    float theta = rotation_angle / 180 * MY_PI;
-    float cos_theta = std::cos(theta);
-    float sin_theta = std::sin(theta);
-    model << cos_theta, -sin_theta,0,0,  sin_theta,cos_theta,0,0,  0,0,1,0, 0,0,0,1;
-
+    float cos_theta = cos(rotation_angle), sin_theta = sin(rotation_angle);
+    model << cos_theta, -sin_theta, 0, 0, sin_theta, cos_theta, 0, 0, 
+             0,0,1,0, 0,0,0,1;
     return model;
 }
 
@@ -45,21 +44,16 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     // TODO: Implement this function
     // Create the projection matrix for the given parameters.
     // Then return it.
-    Eigen::Matrix4f M_ortho = Eigen::Matrix4f::Identity();
-    // asapect = r/t, tan(fov/2) = t/abs(n)
-    float tan_fov_2 = std::tan(eye_fov/2/180*MY_PI);
-    float top = tan_fov_2 * std::abs(zNear);
-    float right = aspect_ratio* top;
-    float bottom = -top;
+    float tan_half_fov = std::tan(eye_fov/180.0*MY_PI);
+    float right = zNear * tan_half_fov;
     float left = -right;
+    float top = right * aspect_ratio, bottom = -top;
+    Eigen::Matrix4f M_ortho = Eigen::Matrix4f::Identity();
     M_ortho << 2/(right-left),0,0,-(right+left)/(right-left),  0,2/(top-bottom),0,-(top+bottom)/(top-bottom),
                 0,0,2/(zNear-zFar), -(zNear+zFar)/(zNear-zFar),  0,0,0,1;
-
     Eigen::Matrix4f M_persp_2_ortho= Eigen::Matrix4f::Identity();
     M_persp_2_ortho << zNear, 0,0,0,  0,zNear,0,0,  0,0,zNear+zFar,-zNear*zFar,  0,0,1,0;
-
     projection = M_ortho * M_persp_2_ortho;
-
     return projection;
 }
 
@@ -114,7 +108,6 @@ int main(int argc, const char** argv)
 
         r.set_model(get_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
-        // eye_fov, aspect_ratio, near, far
         r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
 
         r.draw(pos_id, ind_id, rst::Primitive::Triangle);

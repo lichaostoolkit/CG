@@ -80,7 +80,7 @@ void rst::rasterizer::draw_line(Eigen::Vector3f begin, Eigen::Vector3f end)
                 }
                 px=px+2*(dy1-dx1);
             }
-            //            delay(0);
+//            delay(0);
             Eigen::Vector3f point = Eigen::Vector3f(x, y, 1.0f);
             set_pixel(point,line_color);
         }
@@ -120,7 +120,7 @@ void rst::rasterizer::draw_line(Eigen::Vector3f begin, Eigen::Vector3f end)
                 }
                 py=py+2*(dx1-dy1);
             }
-        //            delay(0);
+//            delay(0);
             Eigen::Vector3f point = Eigen::Vector3f(x, y, 1.0f);
             set_pixel(point,line_color);
         }
@@ -138,7 +138,6 @@ void rst::rasterizer::draw(rst::pos_buf_id pos_buffer, rst::ind_buf_id ind_buffe
     {
         throw std::runtime_error("Drawing primitives other than triangle is not implemented yet!");
     }
-    // buf: the set of indices: [ [1,2,3] , [1,2,3], [1,2,3] ]
     auto& buf = pos_buf[pos_buffer.pos_id];
     auto& ind = ind_buf[ind_buffer.ind_id];
 
