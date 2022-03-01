@@ -32,20 +32,6 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
 {
     // TODO: Copy-paste your implementation from the previous assignment.
     Eigen::Matrix4f projection;
-    Eigen::Matrix4f M_ortho = Eigen::Matrix4f::Identity();
-    // asapect = r/t, tan(fov/2) = t/abs(n)
-    float tan_fov_2 = std::tan(eye_fov/2/180*MY_PI);
-    float top = tan_fov_2 * std::abs(zNear);
-    float right = aspect_ratio* top;
-    float bottom = -top;
-    float left = -right;
-    M_ortho << 2/(right-left),0,0,-(right+left)/(right-left),  0,2/(top-bottom),0,-(top+bottom)/(top-bottom),
-                0,0,2/(zNear-zFar), -(zNear+zFar)/(zNear-zFar),  0,0,0,1;
-
-    Eigen::Matrix4f M_persp_2_ortho= Eigen::Matrix4f::Identity();
-    M_persp_2_ortho << zNear, 0,0,0,  0,zNear,0,0,  0,0,zNear+zFar,-zNear*zFar,  0,0,1,0;
-
-    projection = M_ortho * M_persp_2_ortho;
 
     return projection;
 }
@@ -64,43 +50,33 @@ int main(int argc, const char** argv)
 
     rst::rasterizer r(700, 700);
 
-    Eigen::Vector3f eye_pos = {0,0,1000};
+    Eigen::Vector3f eye_pos = {0,0,5};
 
-
-    // std::vector<Eigen::Vector3f> pos
-    //         {
-    //                 {2, 0, -2},
-    //                 {0, 2, -2},
-    //                 {-2, 0, -2},
-    //                 {3.5, -1, -5},
-    //                 {2.5, 1.5, -5},
-    //                 {-1, 0.5, -5}
-    //         };
 
     std::vector<Eigen::Vector3f> pos
-        {
-            {130.0,165.0,65.0},
-            {82.0,165.0,225.0},
-            {240.0,165.0,272.0},
-            {290.0,165.0,114.0}
-        };
-
+            {
+                    {2, 0, -2},
+                    {0, 2, -2},
+                    {-2, 0, -2},
+                    {3.5, -1, -5},
+                    {2.5, 1.5, -5},
+                    {-1, 0.5, -5}
+            };
 
     std::vector<Eigen::Vector3i> ind
             {
                     {0, 1, 2},
-                    // {3, 4, 5}
-                    {0, 2, 3}
+                    {3, 4, 5}
             };
 
     std::vector<Eigen::Vector3f> cols
             {
-                    {217.0, 0.0, 185.0},
-                    {217.0, 0.0, 185.0},
-                    {217.0, 0.0, 185.0},
-                    {0.0, 217.0, 238.0},
-                    {0.0, 217.0, 238.0},
-                    {0.0, 217.0, 238.0}
+                    {217.0, 238.0, 185.0},
+                    {217.0, 238.0, 185.0},
+                    {217.0, 238.0, 185.0},
+                    {185.0, 217.0, 238.0},
+                    {185.0, 217.0, 238.0},
+                    {185.0, 217.0, 238.0}
             };
 
     auto pos_id = r.load_positions(pos);
