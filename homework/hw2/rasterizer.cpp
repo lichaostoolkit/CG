@@ -69,7 +69,7 @@ static std::tuple<float, float, float> computeBarycentric2D(float x, float y, co
     return {c1,c2,c3};
 }
 
-void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf_id col_buffer, Primitive type, bool use_msaa)
+void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf_id col_buffer, Primitive type, bool use_ssaa)
 {
     auto& buf = pos_buf[pos_buffer.pos_id];
     auto& ind = ind_buf[ind_buffer.ind_id];
@@ -111,12 +111,12 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         t.setColor(0, col_x[0], col_x[1], col_x[2]);
         t.setColor(1, col_y[0], col_y[1], col_y[2]);
         t.setColor(2, col_z[0], col_z[1], col_z[2]);
-        rasterize_triangle(t, use_msaa);
+        rasterize_triangle(t, use_ssaa);
     }
 }
 
 //Screen space rasterization
-void rst::rasterizer::rasterize_triangle(const Triangle& t, bool use_msaa) {
+void rst::rasterizer::rasterize_triangle(const Triangle& t, bool use_ssaa) {
     auto v = t.toVector4();
     
     // TODO : Find out the bounding box of current triangle.
@@ -133,7 +133,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, bool use_msaa) {
 
     for (float x=floor(x_range[0]);x<=x_range[1];x++) {
         for (float y = floor(y_range[0]);y<=y_range[1];y++) {
-            if (!use_msaa) {
+            if (!use_ssaa) {
                 if (insideTriangle(x, y, t.v)) {
                     auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
                     float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
@@ -147,7 +147,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, bool use_msaa) {
                     }
                 }
             } else {
-                int msaa_cnt = 0;
+                int ssaa_cnt = 0;
                 for (float interval_x : {0.25, 0.75}) {
                     for (float interval_y : {0.25, 0.75}) {
                         float multi_sample_x = x + interval_x, multi_sample_y = y + interval_y;
@@ -156,20 +156,20 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, bool use_msaa) {
                             float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                             float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                             z_interpolated *= w_reciprocal;
-                            int sample_point_index = get_index(x, y)*4 + msaa_cnt;
-                            if (msaa_depth_buf[sample_point_index] > z_interpolated) {
-                                msaa_depth_buf[sample_point_index] = z_interpolated;
-                                msaa_color_buf[sample_point_index] = t.getColor();
+                            int sample_point_index = get_index(x, y)*4 + s'sa'a_cnt;
+                            if (ssaa_depth_buf[sample_point_index] > z_interpolated) {
+                                ssaa_depth_buf[sample_point_index] = z_interpolated;
+                                ssaa_color_buf[sample_point_index] = t.getColor();
                             }
                         }
-                        msaa_cnt++;
+                        ssaa_cnt++;
                     }
                 }
                 // Vector3f的默认初始化是随机值，要小心！！！
                 Eigen::Vector3f color={0,0,0};
                 for ( int cnt=0; cnt<=3; cnt++) {
                     int sample_point_index = get_index(x, y)*4 + cnt;
-                    color += msaa_color_buf[sample_point_index];
+                    color += ssaa_color_buf[sample_point_index];
                 }
                 
                 color = color/4;
@@ -211,8 +211,8 @@ void rst::rasterizer::clear(rst::Buffers buff)
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
         std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
-        std::fill(msaa_depth_buf.begin(), msaa_depth_buf.end(), std::numeric_limits<float>::infinity());
-        std::fill(msaa_color_buf.begin(), msaa_color_buf.end(), Eigen::Vector3f{0, 0, 0});
+        std::fill(ssaa_depth_buf.begin(), ssaa_depth_buf.end(), std::numeric_limits<float>::infinity());
+        std::fill(ssaa_color_buf.begin(), ssaa_color_buf.end(), Eigen::Vector3f{0, 0, 0});
     }
 }
 
@@ -220,8 +220,8 @@ rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 {
     frame_buf.resize(w * h);
     depth_buf.resize(w * h);
-    msaa_depth_buf.resize(4 * w * h); // 乘以超采样的倍数
-    msaa_color_buf.resize(4 * w * h);
+    ssaa_depth_buf.resize(4 * w * h); // 乘以超采样的倍数
+    ssaa_color_buf.resize(4 * w * h);
 }
 
 int rst::rasterizer::get_index(int x, int y)
