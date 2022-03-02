@@ -69,7 +69,7 @@ static std::tuple<float, float, float> computeBarycentric2D(float x, float y, co
     return {c1,c2,c3};
 }
 
-void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf_id col_buffer, Primitive type)
+void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf_id col_buffer, Primitive type, bool use_msaa)
 {
     auto& buf = pos_buf[pos_buffer.pos_id];
     auto& ind = ind_buf[ind_buffer.ind_id];
@@ -111,7 +111,7 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         t.setColor(0, col_x[0], col_x[1], col_x[2]);
         t.setColor(1, col_y[0], col_y[1], col_y[2]);
         t.setColor(2, col_z[0], col_z[1], col_z[2]);
-        rasterize_triangle(t);
+        rasterize_triangle(t, use_msaa);
     }
 }
 
@@ -135,12 +135,10 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, bool use_msaa) {
         for (float y = floor(y_range[0]);y<=y_range[1];y++) {
             if (!use_msaa) {
                 if (insideTriangle(x, y, t.v)) {
-                    // std::cout << "1111\n";
                     auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
                     float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                     float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                     z_interpolated *= w_reciprocal;
-                    // std::cout << "2222\n";
                     if (y+1 >= height || x+1 >=width)
                         std::cout << "error\n";
                     if (depth_buf[get_index(x, y)] > z_interpolated) {
@@ -159,26 +157,24 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, bool use_msaa) {
                             float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                             z_interpolated *= w_reciprocal;
                             int sample_point_index = get_index(x, y)*4 + msaa_cnt;
-                            if (msaa_depth_buf[sample_point_index] > z_interpolated) 
+                            if (msaa_depth_buf[sample_point_index] > z_interpolated) {
                                 msaa_depth_buf[sample_point_index] = z_interpolated;
-                            msaa_cnt++;
+                                msaa_color_buf[sample_point_index] = t.getColor();
+                            }
                         }
+                        msaa_cnt++;
                     }
                 }
-                // record depth for each sample point inside of each pixel
-                std::vector<Eigen::Vector3f> color_list;
+                // Vector3f的默认初始化是随机值，要小心！！！
+                Eigen::Vector3f color={0,0,0};
                 for ( int cnt=0; cnt<=3; cnt++) {
                     int sample_point_index = get_index(x, y)*4 + cnt;
-                    if (msaa_depth_buf[sample_point_index] < std::numeric_limits<float>::infinity())
-                        color_list.push_back(t.getColor());
+                    color += msaa_color_buf[sample_point_index];
                 }
-                Eigen::Vector3f color;
-                for (auto cur: color_list)
-                    color += cur;
-                color = color / color_list.size();
+                
+                color = color/4;
                 set_pixel(Eigen::Vector3f{x, y, 0}, color);
             }
-        
         }
     }
     
@@ -216,6 +212,7 @@ void rst::rasterizer::clear(rst::Buffers buff)
     {
         std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
         std::fill(msaa_depth_buf.begin(), msaa_depth_buf.end(), std::numeric_limits<float>::infinity());
+        std::fill(msaa_color_buf.begin(), msaa_color_buf.end(), Eigen::Vector3f{0, 0, 0});
     }
 }
 
@@ -224,6 +221,7 @@ rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
     frame_buf.resize(w * h);
     depth_buf.resize(w * h);
     msaa_depth_buf.resize(4 * w * h); // 乘以超采样的倍数
+    msaa_color_buf.resize(4 * w * h);
 }
 
 int rst::rasterizer::get_index(int x, int y)
