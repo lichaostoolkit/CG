@@ -304,18 +304,18 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
     b.normalize();
     // std::cout << "3333\n";
     Eigen::Matrix3f TBN;
-    TBN << t,b,normal;
-    Eigen::Matrix3f TBN_t = TBN.transpose();
+    TBN << t,b,normal; // "<<" 按列赋值，后面不用转置
+    // Eigen::Matrix3f TBN_t = TBN.transpose(); // 不用转置，
     // std::cout << "3333\n";
 
     auto texture = payload.texture; 
     auto w = texture->width, h = texture->height;
     auto u = payload.tex_coords.x(), v = payload.tex_coords.y();
-    auto dU = kh * kn * (texture->getColor(u+1.0/w,v).norm() - texture->getColor(u,v).norm()); // 注释中的 h()应该用什么函数
+    auto dU = kh * kn * (texture->getColor(u+1.0/w,v).norm() - texture->getColor(u,v).norm()); // 求梯度 正常情况要除以delta_x，但是这里还要乘一个常数（调节bump的影响程度），因此delta_x可以不除
     auto dV = kh * kn * (texture->getColor(u,v+1.0/h).norm() - texture->getColor(u,v).norm());
     // std::cout << "4444\n";
     Eigen::Vector3f ln = {-dU, -dV, 1.};
-    Eigen::Vector3f final_n = (TBN_t * ln).normalized();  // 从切线空间转到世界空间
+    Eigen::Vector3f final_n = (TBN * ln).normalized();  // 从切线空间转到世界空间
     // std::cout << "5555\n";
     Eigen::Vector3f result_color = {0, 0, 0};
     result_color = final_n;
