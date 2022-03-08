@@ -192,7 +192,7 @@ Vector3f castRay(
                     lightAmt += inShadow ? 0 : light->intensity * LdotN;
                     Vector3f reflectionDirection = reflect(-lightDir, N);
                     // 判断反射光线方向和观察方向的接近程度
-                    specularColor += powf(std::max(0.f, -dotProduct(reflectionDirection, dir)),
+                    specularColor += inShadow ? 0 : powf(std::max(0.f, -dotProduct(reflectionDirection, dir)),
                         payload->hit_obj->specularExponent) * light->intensity;
                 }
 
