@@ -15,7 +15,7 @@ struct hit_payload
 class Renderer
 {
 public:
-    void Render(const Scene& scene);
+    void Render(const Scene& scene, std::string output = "binary.bvh.ppm");
 
 private:
 };

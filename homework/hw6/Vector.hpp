@@ -8,13 +8,15 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <vector>
 
 class Vector3f {
 public:
     float x, y, z;
-    Vector3f() : x(0), y(0), z(0) {}
-    Vector3f(float xx) : x(xx), y(xx), z(xx) {}
-    Vector3f(float xx, float yy, float zz) : x(xx), y(yy), z(zz) {}
+    std::vector<float> elems;
+    Vector3f() : x(0), y(0), z(0) { elems={0,0,0}; }
+    Vector3f(float xx) : x(xx), y(xx), z(xx) { elems={xx,xx,xx}; }
+    Vector3f(float xx, float yy, float zz) : x(xx), y(yy), z(zz) { elems={xx,yy,zz}; }
     Vector3f operator * (const float &r) const { return Vector3f(x * r, y * r, z * r); }
     Vector3f operator / (const float &r) const { return Vector3f(x / r, y / r, z / r); }
 
@@ -28,7 +30,7 @@ public:
     friend std::ostream & operator << (std::ostream &os, const Vector3f &v)
     { return os << v.x << ", " << v.y << ", " << v.z; }
     double       operator[](int index) const;
-    double&      operator[](int index);
+    // double&      operator[](int index);
 
 
     static Vector3f Min(const Vector3f &p1, const Vector3f &p2) {

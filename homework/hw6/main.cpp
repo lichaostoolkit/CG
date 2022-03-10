@@ -23,7 +23,10 @@ int main(int argc, char** argv)
     Renderer r;
 
     auto start = std::chrono::system_clock::now();
-    r.Render(scene);
+    std::string output = "binary.bvh.ppm";
+    if (argc == 2) 
+        output = std::string(argv[1]);
+    r.Render(scene, output);
     auto stop = std::chrono::system_clock::now();
 
     std::cout << "Render complete: \n";

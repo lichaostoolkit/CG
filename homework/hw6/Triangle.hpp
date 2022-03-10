@@ -9,6 +9,20 @@
 #include <cassert>
 #include <array>
 
+
+void recursivePrint(BVHBuildNode* node) {
+    if (node->left || node->right) {
+        if (node->left)
+            recursivePrint(node->left);
+        if (node->right)
+            recursivePrint(node->right);
+        return;
+    }
+    if(node->object != nullptr)
+        std::cout << "got 1\n";
+    return;
+}
+
 bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
                           const Vector3f& v2, const Vector3f& orig,
                           const Vector3f& dir, float& tnear, float& u, float& v)
@@ -124,6 +138,8 @@ public:
             ptrs.push_back(&tri);
 
         bvh = new BVHAccel(ptrs);
+        std::cout << "total: " << bvh->primitives.size();
+        // recursivePrint(bvh->root);
     }
 
     bool intersect(const Ray& ray) { return true; }
