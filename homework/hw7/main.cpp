@@ -42,9 +42,11 @@ int main(int argc, char** argv)
     scene.buildBVH();
 
     Renderer r;
-
+    int spp = 16;
+    if (argc ==2) 
+        spp = std::stoi(argv[1]);
     auto start = std::chrono::system_clock::now();
-    r.Render(scene);
+    r.Render(scene, spp);
     auto stop = std::chrono::system_clock::now();
 
     std::cout << "Render complete: \n";

@@ -17,7 +17,7 @@ const float EPSILON = 0.00001;
 // The main render function. This where we iterate over all pixels in the image,
 // generate primary rays and cast these rays into the scene. The content of the
 // framebuffer is saved to a file.
-void Renderer::Render(const Scene& scene)
+void Renderer::Render(const Scene& scene, int spp)
 {
     std::vector<Vector3f> framebuffer(scene.width * scene.height);
 
@@ -28,7 +28,6 @@ void Renderer::Render(const Scene& scene)
     int process = 0;
 
     // change the spp value to change sample ammount
-    int spp = 32;
     std::cout << "SPP: " << spp << "\n";
 
     auto multiThreadRenderFunc = [&](int rowBegin, int rowEnd, int colBegin, int colEnd){
@@ -89,7 +88,9 @@ void Renderer::Render(const Scene& scene)
     UpdateProgress(1.f);
 
     // save framebuffer to file
-    FILE* fp = fopen("binary.ppm", "wb");
+    std::string output = ".binary.ppm";
+    output = std::to_string(spp) + output;
+    FILE* fp = fopen(output.c_str(), "wb");
     (void)fprintf(fp, "P6\n%d %d\n255\n", scene.width, scene.height);
     for (auto i = 0; i < scene.height * scene.width; ++i) {
         static unsigned char color[3];
