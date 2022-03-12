@@ -6,8 +6,9 @@
 #define RAYTRACING_MATERIAL_H
 
 #include "Vector.hpp"
+#include <algorithm>
 
-enum MaterialType { DIFFUSE};
+enum MaterialType { DIFFUSE, anisotropic};
 
 class Material{
 private:
@@ -142,6 +143,14 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
             
             break;
         }
+        default: {
+            // uniform sample on the hemisphere
+            float x_1 = get_random_float(), x_2 = get_random_float();
+            float z = std::fabs(1.0f - 2.0f * x_1);
+            float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
+            Vector3f localRay(r*std::cos(phi), r*std::sin(phi), z);
+            return toWorld(localRay, N);
+        }
     }
 }
 
@@ -149,6 +158,14 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
     switch(m_type){
         case DIFFUSE:
         {
+            // uniform sample probability 1 / (2 * PI)
+            if (dotProduct(wo, N) > 0.0f)
+                return 0.5f / M_PI;
+            else
+                return 0.0f;
+            break;
+        }
+        default: {
             // uniform sample probability 1 / (2 * PI)
             if (dotProduct(wo, N) > 0.0f)
                 return 0.5f / M_PI;
@@ -166,6 +183,29 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
             // calculate the contribution of diffuse   model
             float cosalpha = dotProduct(N, wo);
             if (cosalpha > 0.0f) {
+                Vector3f diffuse = Kd / M_PI; // 除以PI，从而保证brdf的能量守恒
+                return diffuse;
+            }
+            else
+                return Vector3f(0.0f);
+            break;
+        }
+        // how to describe anisotropic?
+        // for isotropic microfacet, as long as (phi_i - phi_j) doesn't change, brdf will not change;
+        //      brdf( theta_i, phi_i, theta_j, phi_j) == brdf( theta_i, theta_j, (phi_i - phi_j) )
+        // for anisotropic microfacet, even if the (phi_i - phi_j) keep same, 
+        // the phi_i or phi_j changes, brdf will change;
+        //      brdf( theta_i, phi_i, theta_j, phi_j) != brdf( theta_i, theta_j, (phi_i - phi_j) )
+        case anisotropic:
+        {
+            float cosalpha = dotProduct(N, wo);
+            if (cosalpha > 0.0f) {
+                // 竖直方向同性，表现出高光
+                if ( std::abs(wi.x) < 0.1 && std::abs(wo.x) < 0.1) {
+                    auto h = (-wi+wo)/(-wi+wo).norm();
+                    Vector3f specular = 3*Kd / M_PI * std::pow( std::max(0.f, dotProduct(h, N)), 2);
+                    return specular;
+                }
                 Vector3f diffuse = Kd / M_PI;
                 return diffuse;
             }

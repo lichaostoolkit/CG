@@ -136,16 +136,15 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         if (interP.m->hasEmission())
             return interP.m->getEmission();
         Material *P_m = interP.m;
-    //    float tnear = kInfinity;
         Vector3f P = interP.coords;
-        Vector3f N = interP.normal; // normal
+        Vector3f N = interP.normal;
         
         // part1: direct light
-        Intersection hit_light_inter;
+        Intersection light_sample_pos;
         float pdf_light;
-        sampleLight(hit_light_inter, pdf_light);
+        sampleLight(light_sample_pos, pdf_light);
         // Get x, ws, NN, emit from inter
-        auto lightPos = hit_light_inter.coords;
+        auto lightPos = light_sample_pos.coords;
         auto P2light = lightPos - P;  // light2hitpoint
         auto light_distance = P2light.norm()*P2light.norm();
         auto P2light_dir = P2light.normalized();
@@ -154,17 +153,16 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         Ray p_2_x_ray(P, P2light_dir);
         Intersection block_intersection = Scene::intersect(p_2_x_ray);
         Vector3f L_dir;
-        Vector3f collisionlight = hit_light_inter.coords - interP.coords;
         // If the ray is not blocked in the middle
         // L_dir = emit * eval(wo, ws, N) * dot(ws, N) * dot(ws, NN) / |x-p|^2 / pdf_light
-        // 这里不用判断相等，浮点数很难相等，用一个epsilon判断
+        // 这里不能判断相等，浮点数很难相等，用一个epsilon判断
         // 并且 这个边界值判断对画质影响很大，设的太小，会出现很多黑点
         float epsilon = 1e-2; 
         if ((block_intersection.coords - lightPos).norm() < epsilon) {
             // 注意 wi、wo的方向，eval方法要求的wo是往外方向
             auto f_r = P_m->eval(ray.direction, P2light_dir, N);
-            auto emit = hit_light_inter.emit;
-            auto NN = hit_light_inter.normal;
+            auto emit = light_sample_pos.emit;
+            auto NN = light_sample_pos.normal;
             L_dir = emit * f_r * dotProduct(P2light_dir, N) * dotProduct(-P2light_dir, NN) / light_distance / pdf_light;
         }
         // part2: indirect light

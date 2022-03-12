@@ -17,7 +17,7 @@ const float EPSILON = 0.00001;
 // The main render function. This where we iterate over all pixels in the image,
 // generate primary rays and cast these rays into the scene. The content of the
 // framebuffer is saved to a file.
-void Renderer::Render(const Scene& scene, int spp)
+void Renderer::Render(const Scene& scene, int spp, std::string output)
 {
     std::vector<Vector3f> framebuffer(scene.width * scene.height);
 
@@ -53,7 +53,7 @@ void Renderer::Render(const Scene& scene, int spp)
 
     int id = 0;
 	constexpr int bx = 2;
-	constexpr int by = 1;
+	constexpr int by = 2;
 	std::thread th[bx * by];
 
 	int strideX = (scene.width + 1) / bx;
@@ -88,7 +88,6 @@ void Renderer::Render(const Scene& scene, int spp)
     UpdateProgress(1.f);
 
     // save framebuffer to file
-    std::string output = ".binary.ppm";
     output = std::to_string(spp) + output;
     FILE* fp = fopen(output.c_str(), "wb");
     (void)fprintf(fp, "P6\n%d %d\n255\n", scene.width, scene.height);
