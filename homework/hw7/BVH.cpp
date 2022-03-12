@@ -2,6 +2,11 @@
 #include <cassert>
 #include "BVH.hpp"
 
+const std::string bvh_method = "SAH"; // BVH or SAH
+const size_t SAH_N = 6;
+const float inter_cost = 1;
+const float traversal_cost = 0.2;
+
 BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
                    SplitMethod splitMethod)
     : maxPrimsInNode(std::min(255, maxPrimsInNode)), splitMethod(splitMethod),
@@ -50,7 +55,7 @@ BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
         node->area = node->left->area + node->right->area;
         return node;
     }
-    else {
+    if (bvh_method == "BVH") {
         Bounds3 centroidBounds;
         for (int i = 0; i < objects.size(); ++i)
             centroidBounds =
@@ -91,6 +96,60 @@ BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
 
         node->bounds = Union(node->left->bounds, node->right->bounds);
         node->area = node->left->area + node->right->area;
+    } else {
+        // dim：当前bound跨度最长的一个维度
+        int max_dim = bounds.maxExtent();
+        float interval = bounds.Diagonal()[max_dim] / SAH_N;
+        std::vector<Object*> final_left_obj,final_right_obj;
+
+        std::vector<float> centroid_list;
+        for (int i = 0; i < objects.size(); ++i)
+            centroid_list.push_back(objects[i]->getBounds().Centroid()[max_dim]);
+        // check if the centroids are very close, if its closer than "interval" ,the recurse will be endless
+        // TODO: if very close, it's unnessesary to slpit, but here still split (to be compatible with other code)
+        if (*std::max_element(centroid_list.begin(), centroid_list.end()) -
+            *std::min_element(centroid_list.begin(), centroid_list.end()) < interval) {
+            final_left_obj = {objects.begin(), objects.begin()+1};
+            final_right_obj = {objects.begin()+1, objects.end()};
+        } else {
+            float min_cost = std::numeric_limits<float>::infinity();
+            float total_area = bounds.SurfaceArea();
+            for (int i =1; i<SAH_N; i++) {
+                std::vector<Object*> left_obj,right_obj;
+                Bounds3 left_bound,right_bound;
+                for (auto obj: objects) {
+                    if (obj->getBounds().Centroid()[max_dim] < bounds.pMin[max_dim] + i*interval) {
+                        left_obj.push_back(obj);
+                        left_bound = Union(left_bound, obj->getBounds());
+                    } else {
+                        right_obj.push_back(obj);
+                        right_bound = Union(right_bound, obj->getBounds());
+                    }
+                }
+                // need to check if size==0,if so the surfaceArea will be undefined;
+                float left_cost = left_obj.size()>0 ? left_bound.SurfaceArea()/total_area*left_obj.size()*inter_cost : 0;
+                float right_cost = right_obj.size()>0 ? right_bound.SurfaceArea()/total_area*right_obj.size()*inter_cost : 0;
+                float cur_cost = left_cost + right_cost + traversal_cost;
+                if (cur_cost!=cur_cost){
+                    std::cout << left_bound.SurfaceArea()<<" "<<bounds.SurfaceArea()<<" "<<right_bound.SurfaceArea()
+                                <<" "<<left_obj.size()<<" "<<right_obj.size()<<"\n";
+                    exit(0);
+                }
+                if (cur_cost < min_cost) {
+                    final_left_obj = std::move(left_obj);
+                    final_right_obj =  std::move(right_obj);
+                    min_cost = cur_cost;
+                }
+            }
+        }
+        
+        if (final_left_obj.size()>0)
+            node->left = recursiveBuild(final_left_obj);
+        if (final_right_obj.size()>0)
+            node->right = recursiveBuild(final_right_obj);
+        Bounds3 empty;
+        node->bounds = Union(node->left ? node->left->bounds :empty,
+                             node->right ? node->right->bounds : empty);
     }
 
     return node;
